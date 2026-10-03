@@ -1,13 +1,30 @@
-import { StrictMode } from 'react';
+import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, useLocation } from 'react-router-dom';
 import { ThemeProvider } from 'next-themes';
 import { HelmetProvider } from 'react-helmet-async';
+import { PostHogProvider, usePostHog } from '@posthog/react';
 import Lenis from 'lenis';
 import './index.css';
 import App from './App.tsx';
 import { ErrorBoundary } from './ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
+
+const posthogOptions = {
+  api_host: import.meta.env.VITE_POSTHOG_HOST,
+  defaults: '2026-05-30',
+} as const;
+
+function PageTracker() {
+  const location = useLocation();
+  const posthog = usePostHog();
+
+  useEffect(() => {
+    posthog.capture('$pageview');
+  }, [location, posthog]);
+
+  return null;
+}
 
 const PUBLIC_PREFIXES = ['/', '/internships', '/companies', '/about', '/contact', '/faq', '/careers', '/research', '/studio', '/school', '/edu', '/verify'];
 
@@ -41,16 +58,22 @@ initLenisIfPublic();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ErrorBoundary>
-      <HelmetProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <ThemeProvider attribute="class" defaultTheme="dark">
-              <App />
-            </ThemeProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </HelmetProvider>
-    </ErrorBoundary>
+    <PostHogProvider
+      apiKey={import.meta.env.VITE_POSTHOG_PROJECT_TOKEN}
+      options={posthogOptions}
+    >
+      <ErrorBoundary>
+        <HelmetProvider>
+          <BrowserRouter>
+            <PageTracker />
+            <AuthProvider>
+              <ThemeProvider attribute="class" defaultTheme="dark">
+                <App />
+              </ThemeProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </HelmetProvider>
+      </ErrorBoundary>
+    </PostHogProvider>
   </StrictMode>,
 );

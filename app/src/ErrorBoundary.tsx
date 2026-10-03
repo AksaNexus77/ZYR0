@@ -1,4 +1,5 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react';
+import { posthog } from 'posthog-js';
 
 type Props = { children: ReactNode };
 type State = { hasError: boolean; error?: Error };
@@ -15,6 +16,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('ErrorBoundary caught:', error, info);
+    if (posthog.__loaded) {
+      posthog.captureException(error, { extra: info });
+    }
   }
 
   render() {
