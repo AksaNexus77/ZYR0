@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: '/',
+    envPrefix: ['VITE_', 'POSTHOG_'],
     plugins: [
       inspectAttr(), 
       react(),

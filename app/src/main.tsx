@@ -11,7 +11,9 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
 
 const posthogOptions = {
-  api_host: import.meta.env.VITE_POSTHOG_HOST,
+  api_host: import.meta.env.POSTHOG_HOST,
+  ui_host: 'https://us.posthog.com',
+  person_profiles: 'identified_only',
   defaults: '2026-05-30',
 } as const;
 
@@ -59,7 +61,7 @@ initLenisIfPublic();
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <PostHogProvider
-      apiKey={import.meta.env.VITE_POSTHOG_PROJECT_TOKEN}
+      apiKey={import.meta.env.POSTHOG_PROJECT_TOKEN}
       options={posthogOptions}
     >
       <ErrorBoundary>
