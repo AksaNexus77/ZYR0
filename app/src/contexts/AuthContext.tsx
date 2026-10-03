@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
+import { posthog } from 'posthog-js';
 import { supabase } from '@/lib/supabase';
 import { signOut as authSignOut } from '@/lib/auth';
 import { withTimeout } from '@/lib/timeout';
@@ -67,8 +68,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       setProfile(data);
+      posthog.identify(userId, { email: data.email ?? undefined, role: data.role });
     } else {
       setProfile(null);
+      posthog.identify(userId);
     }
   }
 
@@ -108,7 +111,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         const nextUserId = session?.user?.id ?? null;
-        const isSameUser = !!nextUserId && nextUserId === currentUserIdRef.current;
+        const prevUserId = currentUserIdRef.current;
+        const isSameUser = !!nextUserId && nextUserId === prevUserId;
         currentUserIdRef.current = nextUserId;
 
         if (session?.user) {
@@ -123,6 +127,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
           setProfileLoaded(true);
+          // Only reset identity when a signed-in user actually signs out — resetting
+          // on every anonymous load would mint a new distinct_id per visit.
+          if (prevUserId) posthog.reset();
         }
       }
     );
@@ -133,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     currentUserIdRef.current = null;
     await authSignOut();
+    posthog.reset();
     setSession(null);
     setUser(null);
     setProfile(null);
